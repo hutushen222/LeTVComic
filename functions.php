@@ -355,6 +355,7 @@ function parseComicDetail($comic, $shd_html) {
 
         // 剧集列表
         $shd_episodes = $shd_html->find('.comic .listTab .list dl');
+        $comic->episode_qty = count($shd_episodes);
         if ($shd_episodes) {
             foreach ($shd_episodes as $shd_episode) {
                 $shd_episode_name = $shd_episode->find('dd .p1 a', 0);
