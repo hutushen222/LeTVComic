@@ -429,7 +429,7 @@ function getCoverFilePath($type, $id, $letv_cover_url) {
 
 /**
  * 抓取并保存封面图片
- * 
+ *
  * @param $comic
  * @param $cover_path
  */

@@ -7,7 +7,7 @@ require __DIR__ . '/../bootstrap.php';
 $per = 100;
 
 // 动漫
-/*$total = Model::factory('ComicModel')
+$total = Model::factory('ComicModel')
     ->where_equal('cover', '')
     ->count();
 $total_round = ceil($total / $per);
@@ -24,7 +24,7 @@ for ($i = 1; $i <= $total_round; $i++) {
         $cover_path = getCoverFilePath('comic', $comic->id, $comic->letv_cover_url);
         fetchSaveCoverImage($comic, $cover_path);
     }
-}*/
+}
 
 // 剧集
 $total = Model::factory('EpisodeModel')
