@@ -62,8 +62,8 @@
 <section>
     <ul style="list-style-type: none;">
         {% for comic in comics %}
-        <li style="width: 150px; float: left; padding-right: 10px; text-align: center;">
-            <a href="{{ comic.letv_url }}" style="text-align: center;">
+        <li style="width: 150px; float: left; padding-right: 10px; text-align: center; height: 230px; overflow: hidden;">
+            <a href="{{ comic.letv_url }}" title="{{ comic.name|e }}" style="text-align: center;">
                 <img width="150" height="200" src="{{ comic.letv_cover_url }}">
                 <br>
                 {{ comic.name|e }}
