@@ -6,6 +6,20 @@ require __DIR__ . '/../bootstrap.php';
 
 use ThauEx\SimpleHtmlDom\SHD;
 
+$options = getopt('t:');
+
+// 获取开始和结束的页面
+if (isset($options['t'])) {
+    if (is_numeric($options['t']) && intval($options['t']) > 0) {
+        $timeout = intval($options['t']);
+    } else {
+        echo 'Invalid timeout number', PHP_EOL;
+        die;
+    }
+} else {
+    $timeout = 10;
+}
+
 // Create a stream
 $opts = array(
     'http'=>array(
@@ -20,6 +34,7 @@ $opts = array(
 $context = stream_context_create($opts);
 
 // 获取最大的分页数
+logger('proxy', '获取最大的分页数');
 $max = 1;
 $proxy_page = 'http://www.freeproxylists.net/zh/?pr=HTTP&a[]=1&a[]=2&u=50';
 $content = SHD::getContent($proxy_page, false, $context);
@@ -32,6 +47,7 @@ foreach ($shd_html->find('.page a') as $item) {
 }
 
 // 抓取代理服务器列表
+logger('proxy', '抓取代理服务器列表');
 $proxy_page_format = 'http://www.freeproxylists.net/zh/?pr=HTTP&a[]=1&a[]=2&u=50&page=%d';
 for ($i = 1; $i <= $max; $i++) {
     $proxy_page = sprintf($proxy_page_format, $i);
@@ -70,9 +86,12 @@ for ($i = 1; $i <= $max; $i++) {
 }
 
 // 检测代理服务器可用性
+logger('proxy', '检测代理服务器可用性');
 $proxies = Model::factory('ProxyModel')->find_many();
 foreach ($proxies as $proxy) {
-    $available = checkProxy($proxy, 10);
+    logger('proxy', "检测 {$proxy->ip}");
+    $available = checkProxy($proxy, $timeout);
+    logger('proxy', "{$proxy->ip} " . ($available ? '可用' : '不可用'));
 }
 
 echo 'Done.';

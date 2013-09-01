@@ -397,3 +397,58 @@ function parseComicDetail($comic, $shd_html)
         echo $e->getMessage(), PHP_EOL;
     }
 }
+
+
+/**
+ * 获得封面存储路径
+ *
+ * @param $type
+ * @param $id
+ */
+function getCoverFilePath($type, $id, $letv_cover_url) {
+    $dir = ROOT . '/storage/covers';
+    $relative = '';
+    $file = '';
+
+    $hash = md5($type. '_' . $id);
+    $relative .= '/' . substr($hash, 0, 2) . '/' . substr($hash, 2, 2);
+    $dir .= $relative;
+
+
+    // 获得文件后缀
+    preg_match('/\.(jpg|png|jpeg|gif)$/', $letv_cover_url, $matches);
+    if ($matches) {
+        $file = $hash . $matches[0];
+        $relative .= '/' . $file;
+    } else {
+        trigger_error('无法获取图片类型', E_USER_WARNING);
+    }
+
+    return array('dir' => $dir, 'file' => $file, 'relative' => $relative, 'path' => $dir . '/' . $file);
+}
+
+/**
+ * 抓取并保存封面图片
+ * 
+ * @param $comic
+ * @param $cover_path
+ */
+function fetchSaveCoverImage($comic, $cover_path) {
+    if (!$cover_path['file']) { return; }
+
+    if (!file_exists($cover_path['dir'])) {
+        mkdir($cover_path['dir'], 0755, true);
+    }
+
+    if (!file_exists($cover_path['path'])) {
+        $result = file_put_contents($cover_path['path'], file_get_contents($comic->letv_cover_url));
+        if ($result !== false) {
+            $comic->cover = $cover_path['relative'];
+            $comic->save();
+        }
+    } elseif ($comic->cover != $cover_path['relative']) {
+        $comic->cover = $cover_path['relative'];
+        $comic->save();
+    }
+}
+
