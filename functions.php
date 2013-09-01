@@ -13,16 +13,31 @@ function str_end_with($needle, $haystack) {
     return (substr($haystack, -$length) === $needle);
 }
 
+/**
+ * 开启事务
+ *
+ * @param $connection_name
+ */
 function orm_transaction_start($connection_name = ORM::DEFAULT_CONNECTION) {
     ORM::raw_execute('SET autocommit = 0', NULL, $connection_name);
     ORM::raw_execute('START TRANSACTION;', NULL, $connection_name);
 }
 
+/**
+ * 提交事务
+ *
+ * @param $connection_name
+ */
 function orm_transaction_commit($connection_name = ORM::DEFAULT_CONNECTION) {
     ORM::raw_execute('COMMIT', NULL, $connection_name);
     ORM::raw_execute('SET autocommit = 1', NULL, $connection_name);
 }
 
+/**
+ * 回滚事务
+ *
+ * @param $connection_name
+ */
 function orm_transaction_rollback($connection_name = ORM::DEFAULT_CONNECTION) {
     ORM::raw_execute('ROLLBACK',NULL, $connection_name);
     ORM::raw_execute('SET autocommit = 1', NULL, $connection_name);
@@ -38,7 +53,7 @@ function orm_transaction_rollback($connection_name = ORM::DEFAULT_CONNECTION) {
  *
  * @return string
  */
-function getContent($url, $proxy = null, $hours = 24, $timeout = 10) {
+function getContent($url, $proxy = null, $hours = 3, $timeout = 10) {
     $file = \ThauEx\SimpleHtmlDom\SHD::$fileCacheDir . DIRECTORY_SEPARATOR . md5($url);
 
     if(file_exists($file)) {
@@ -63,7 +78,11 @@ function getContent($url, $proxy = null, $hours = 24, $timeout = 10) {
         $context = stream_context_create($opts);
     }
 
-    $content = file_get_contents($url, false, $context);
+    if (extension_loaded('curl')) {
+        $content = curlGetContent($url, $proxy, $hours, $timeout);
+    } else {
+        $content = file_get_contents($url, false, $context);
+    }
     $content .= '<!-- cached: ' . time() . ' -->';
     file_put_contents($file, $content);
 
@@ -71,13 +90,75 @@ function getContent($url, $proxy = null, $hours = 24, $timeout = 10) {
 }
 
 /**
+ * 使用cURL抓取网页
+ *
+ * @param $url
+ * @param null $proxy
+ * @param int $hours
+ * @param int $timeout
+ *
+ * @return mixed|string
+ */
+function curlGetContent($url, $proxy = null, $hours = 3, $timeout = 10) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HEADER, 0); // no headers in the output
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+    if ($proxy) {
+        curl_setopt($ch, CURLOPT_PROXYPORT, $proxy->port);
+        curl_setopt($ch, CURLOPT_PROXYTYPE, 'HTTP');
+        curl_setopt($ch, CURLOPT_PROXY, $proxy->ip);
+    }
+    $content = curl_exec($ch);
+    curl_close($ch);
+    return $content;
+}
+
+/**
  * 日志接口
+ *
+ * TODO 报警
  *
  * @param $type
  * @param $message
  */
 function logger($type, $message) {
     echo sprintf('%s - [%s] - %s', date('Y-m-d H:i:s'), $type, $message), PHP_EOL;
+}
+
+/**
+ * 自定义错误处理器
+ *
+ * @param $errno
+ * @param $errstr
+ * @param $errfile
+ * @param $errline
+ * @param array $errcontext
+ *
+ * @return bool
+ */
+function letvErrorHandler($errno, $errstr, $errfile, $errline, array $errcontext ) {
+    switch ($errno) {
+        case E_USER_ERROR:
+            logger('error', "Error: $errstr -- Fatal error on line $errline in file $errfile");
+            break;
+
+        case E_USER_WARNING:
+            logger('warning', "Warning: $errstr -- in $errfile on line $errline");
+            break;
+
+        case E_USER_NOTICE:
+            logger('notice', "Notice: $errstr -- in $errfile on line $errline");
+            break;
+
+        default:
+            logger('unknown', "Unknown error [#$errno]: $errstr -- in $errfile on line $errline");
+            break;
+    }
+
+    // Don't execute PHP's internal error handler
+    return TRUE;
 }
 
 /**
@@ -187,6 +268,7 @@ function parseComicDetail($comic, $shd_html)
         if ($shd_status && preg_match('/^共(.+)集$/', trim($shd_status->plaintext))) {
             $comic->complete = ComicModel::COMPLETE;
         }
+
 
         $shd_info = $shd_html->find('.comic .intro .textInfo', 0);
 
@@ -303,10 +385,13 @@ function parseComicDetail($comic, $shd_html)
                 }
             }
         }
-
         $comic->updated = date('Y-m-d H:i:s');
         $comic->save();
         orm_transaction_commit();
+
+        // 用于解决“樱桃小丸子 第2季”导致的“Segmentation fault (core dumped)”错误
+        $shd_html->clear();
+        unset($shd_html);
     } catch (Exception $e) {
         orm_transaction_rollback();
         echo $e->getMessage(), PHP_EOL;

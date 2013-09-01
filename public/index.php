@@ -35,7 +35,10 @@ $app->get('/', function () use ($app) {
         ->limit($per)
         ->find_many();
 
-    $app->render('index.html');
+    $app->render('index.html', array(
+        'comics' => $comics,
+        'current' => '',
+    ));
 });
 
 // Run app

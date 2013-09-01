@@ -6,6 +6,8 @@ require ROOT . '/functions.php';
 
 $config = require ROOT . '/config.php';
 
+set_error_handler('letvErrorHandler');
+
 // 初始化Idiorm
 ORM::configure($config['database']['default'], null);
 ORM::raw_execute('SET NAMES UTF8', NULL);

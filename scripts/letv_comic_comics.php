@@ -31,11 +31,11 @@ if (isset($options['e'])) {
     $end = 1;
 }
 
-
-
+// 抓取动漫列表页面
 $url_format = 'http://so.letv.com/list/c3_t-1_a-1_y-1_f-1_at-1_o1_i-1_p%d.html';
 for ($i = $start; $i >= $end; $i--) {
     logger('list', "抓取第 $i 页");
+    logger('memory', memory_get_usage(true));
     $str_html = getContent(sprintf($url_format, $i));
     $shd_html = SHD::strGetHtml($str_html);
 
@@ -44,6 +44,8 @@ for ($i = $start; $i >= $end; $i--) {
     // 解析动漫详细信息
     foreach ($comics as $comic) {
         logger('detail', "抓取 {$comic->name} 的详情");
+        logger('memory', memory_get_usage(true));
+        logger('cache', md5($comic->letv_url));
         $str_html = getContent($comic->letv_url);
         $shd_html = SHD::strGetHtml($str_html);
 
