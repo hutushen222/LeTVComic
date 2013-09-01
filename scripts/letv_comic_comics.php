@@ -42,7 +42,12 @@ for ($i = $start; $i >= $end; $i--) {
     $comics = parseComicList($shd_html);
 
     // 解析动漫详细信息
-    foreach ($comics as $comic) {
+    $total = count($comics);
+    $indexed_comics = array_values($comics);
+
+    for ($i = $total; $i > 0; $i--) {
+        $comic = $indexed_comics[$i - 1];
+
         logger('detail', "抓取 {$comic->name} 的详情");
         logger('memory', memory_get_usage(true));
         logger('cache', md5($comic->letv_url));
@@ -50,6 +55,9 @@ for ($i = $start; $i >= $end; $i--) {
         $shd_html = SHD::strGetHtml($str_html);
 
         parseComicDetail($comic, $shd_html);
+    }
+
+    foreach ($comics as $comic) {
     }
 }
 

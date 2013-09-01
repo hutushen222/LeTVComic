@@ -35,7 +35,7 @@ $app->get('/', function () use ($app) {
     if ($page > $max_pager) $page = $max_pager;
 
     $comics = Model::factory('ComicModel')
-        ->order_by_asc('updated')
+        ->order_by_desc('updated')
         ->offset(($page - 1) * $per)
         ->limit($per)
         ->find_many();
