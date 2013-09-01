@@ -25,10 +25,15 @@ $app->view->parserExtensions = array(new \Slim\Views\TwigExtension());
 
 // Define routes
 $app->get('/', function () use ($app) {
-    $page = 1;
-    $per = 10;
+    $per = 9;
+
+    $page = intval($app->request()->get('page'));
+    if ($page <= 0) $page = 1;
 
     $total = Model::factory('ComicModel')->count();
+    $max_pager = ceil($total / $per);
+    if ($page > $max_pager) $page = $max_pager;
+
     $comics = Model::factory('ComicModel')
         ->order_by_asc('updated')
         ->offset(($page - 1) * $per)
@@ -37,7 +42,8 @@ $app->get('/', function () use ($app) {
 
     $app->render('index.html', array(
         'comics' => $comics,
-        'current' => '',
+        'current' => $page,
+        'total' => $max_pager,
     ));
 });
 

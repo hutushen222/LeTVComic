@@ -258,13 +258,13 @@ function getComicListMaxPager() {
  * @param $comic
  * @param $shd_html
  */
-function parseComicDetail($comic, $shd_html)
-{
+function parseComicDetail($comic, $shd_html) {
     try {
         orm_transaction_start();
 
         // 已完结
         $shd_status = $shd_html->find('.info .text .i-t', 0);
+
         if ($shd_status && preg_match('/^共(.+)集$/', trim($shd_status->plaintext))) {
             $comic->complete = ComicModel::COMPLETE;
         }
